@@ -1,1 +1,1 @@
-See full Permit2 article here at XYZ [Article Link].
+See the full Permit2 Implementation article here at [Cyfrin](https://www.cyfrin.io/blog/how-to-implement-permit2).
