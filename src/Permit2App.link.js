@@ -1,10 +1,10 @@
 const { ethers } = require("ethers");
-const { 
+const {
     AllowanceTransfer, // Useful for generating permit data for allowance style approvals
     SignatureTransfer, // Useful for generating permit data for signature style approvals
     PERMIT2_ADDRESS, // 0x000000000022D473030F116dDEE9F6B43aC78BA3
     MaxAllowanceTransferAmount } = require('@uniswap/permit2-sdk');
-require('dotenv/config');
+require('dotenv').config({ path: '../.env' });
 
 // Numbered "steps" for things are not necessarily for following strictly,
 // but just sectioning off chunks of the code in a nice manner.
@@ -17,12 +17,12 @@ const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
 // 2. Instantiate our Permit2App Contract
 const permit2AppABI = require("../out/Permit2App.sol/Permit2App.json").abi;
-const permit2AppAddress = "0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // Your deployed Permit2App address here.
-const permit2AppContract = new ethers.Contract(permit2AppAddress, permit2AppABI, signer); 
+const permit2AppAddress = process.env.SEPOLIA_PERMIT2APP; // Your deployed Permit2App address here.
+const permit2AppContract = new ethers.Contract(permit2AppAddress, permit2AppABI, signer);
 
 
 // 3. Instantiate example token to use. (You must have some of these tokens on the chain you choose).
-const tokenAddress = "0x779877A7B0D9E8603169DdbD7836e478b4624789"; // LINK on Sepolia (Your token address here).
+const tokenAddress = process.env.SEPOLIA_LINK; // LINK on Sepolia.
 const tokenApprovalABI = ['function approve(address spender, uint256 amount) returns (bool)']; // only need `approve()`
 const tokenContract = new ethers.Contract(tokenAddress, tokenApprovalABI, signer);
 
@@ -31,7 +31,7 @@ const tokenContract = new ethers.Contract(tokenAddress, tokenApprovalABI, signer
 // Instantiate Uniswap's Permit2 contract for direct interactions without SDK.
 // (The SDK's `AllowanceProvider` failed to retreive the `nonce` value needed from `allowance` mapping state).
 // Complete ABI if other interactions are desired: https://github.com/Uniswap/sdks/blob/main/sdks/permit2-sdk/abis/Permit2.json
-const permit2ABI = [{"inputs": [{"internalType": "address", "name": "user", "type": "address"},{"internalType": "address", "name": "token", "type": "address"}, {"internalType": "address", "name": "spender", "type": "address"}], "name": "allowance", "outputs": [{"internalType": "uint160", "name": "amount", "type": "uint160"}, {"internalType": "uint48", "name": "expiration", "type": "uint48"}, {"internalType": "uint48", "name": "nonce", "type": "uint48"}], "stateMutability": "view", "type": "function"}];
+const permit2ABI = [{ "inputs": [{ "internalType": "address", "name": "user", "type": "address" }, { "internalType": "address", "name": "token", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint160", "name": "amount", "type": "uint160" }, { "internalType": "uint48", "name": "expiration", "type": "uint48" }, { "internalType": "uint48", "name": "nonce", "type": "uint48" }], "stateMutability": "view", "type": "function" }];
 const permit2Contract = new ethers.Contract(PERMIT2_ADDRESS, permit2ABI, provider);
 
 
@@ -47,7 +47,7 @@ async function approveTokenPermit2() {
         throw error;
     }
 }
-//approveTokenPermit2(); // Run once if approval of a token is needed for first run through.
+// approveTokenPermit2(); // Run once if approval of a token is needed for first run through.
 
 
 // 6. Creates and signs permit data. Execute our Permit2App `allowanceTransferWithPermit()`.
@@ -57,7 +57,7 @@ async function allowanceTransferWithPermit() {
         // Obtain the current nonce in Permit2 state for the [owner, token, spender]
         // SDK appeared to not work, so getting it directly from Permit2 contract instead.
         const owner = await signer.getAddress();
-        const [ , , nonce] = await permit2Contract.allowance(owner, tokenAddress, permit2AppAddress);
+        const [, , nonce] = await permit2Contract.allowance(owner, tokenAddress, permit2AppAddress);
         const currentNonce = parseInt(nonce, 10); // parse nonce's returned string value into base 10 integer.
 
         // Create a permit object
@@ -98,7 +98,7 @@ async function allowanceTransferWithPermit() {
         throw error;
     }
 }
-//allowanceTransferWithPermit();
+// allowanceTransferWithPermit();
 
 
 // 7. 
@@ -118,10 +118,10 @@ async function allowanceTransferWithoutPermit() {
         console.log("Tx confirmed");
     } catch (error) {
         console.error("allowanceTransferWithoutPermit error:", error);
-        throw error;   
+        throw error;
     }
 }
-//allowanceTransferWithoutPermit();
+// allowanceTransferWithoutPermit();
 
 
 // 8. Intended for one-time signature of approval to transfer tokens.
@@ -133,7 +133,7 @@ async function signatureTransfer() {
         // permit amount MUST match passed in signature transfer amount,
         // unlike with AllowanceTransfer where permit amount can be uint160.max
         // while the actual transfer amount can be less.
-        const amount = ethers.utils.parseUnits("0.1", 18); 
+        const amount = ethers.utils.parseUnits("0.1", 18);
 
         // create permit object
         const permit = {
@@ -142,8 +142,8 @@ async function signatureTransfer() {
                 amount: amount
             },
             spender: permit2AppAddress,
-            nonce: nonce, 
-            deadline: deadline 
+            nonce: nonce,
+            deadline: deadline
         };
         console.log("permit object:", permit);
 
@@ -165,10 +165,10 @@ async function signatureTransfer() {
 
     } catch (error) {
         console.error("signatureTransfer error:", error);
-        throw error;   
+        throw error;
     }
 }
-//signatureTransfer();
+// signatureTransfer();
 
 
 // 9. Signature transfer, but this time with extra witness data
@@ -187,8 +187,8 @@ async function signatureTransferWithWitness() {
                 amount: amount
             },
             spender: permit2AppAddress,
-            nonce: nonce, 
-            deadline: deadline 
+            nonce: nonce,
+            deadline: deadline
         };
         console.log("permit object:", permit);
 
@@ -218,10 +218,10 @@ async function signatureTransferWithWitness() {
 
     } catch (error) {
         console.error("signatureTransferWithWitness error:", error);
-        throw error;   
+        throw error;
     }
 }
-//signatureTransferWithWitness();
+// signatureTransferWithWitness();
 
 
 // Adds a duration (ms) to current unix time (ms). Outputs ending time in seconds, not ms.
